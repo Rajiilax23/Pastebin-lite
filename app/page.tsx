@@ -1,66 +1,98 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+
+export default function HomePage() {
+  const [content, setContent] = useState("");
+  const [ttl, setTtl] = useState("");
+  const [maxViews, setMaxViews] = useState("");
+  const [resultUrl, setResultUrl] = useState("");
+  const [error, setError] = useState("");
+
+  async function createPaste() {
+    setError("");
+    setResultUrl("");
+
+    if (!content.trim()) {
+      setError("Content cannot be empty");
+      return;
+    }
+
+    const body: any = { content };
+
+    if (ttl) body.ttl_seconds = Number(ttl);
+    if (maxViews) body.max_views = Number(maxViews);
+
+    try {
+      const res = await fetch("/api/pastes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create paste");
+        return;
+      }
+
+      setResultUrl(data.url);
+      setContent("");
+      setTtl("");
+      setMaxViews("");
+    } catch {
+      setError("Something went wrong");
+    }
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main style={{ padding: "30px", maxWidth: "600px" }}>
+      <h1>Pastebin Lite</h1>
+
+      <textarea
+        placeholder="Enter your text here..."
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        rows={8}
+        style={{ width: "100%", marginBottom: "10px" }}
+      />
+
+      <div style={{ marginBottom: "10px" }}>
+        <input
+          type="number"
+          placeholder="TTL (seconds, optional)"
+          value={ttl}
+          onChange={(e) => setTtl(e.target.value)}
+          style={{ width: "100%", marginBottom: "5px" }}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
+        <input
+          type="number"
+          placeholder="Max views (optional)"
+          value={maxViews}
+          onChange={(e) => setMaxViews(e.target.value)}
+          style={{ width: "100%" }}
+        />
+      </div>
+
+      <button onClick={createPaste}>Create Paste</button>
+
+      {error && (
+        <p style={{ color: "red", marginTop: "10px" }}>
+          {error}
+        </p>
+      )}
+
+      {resultUrl && (
+        <p style={{ marginTop: "10px" }}>
+          Paste created:{" "}
+          <a href={resultUrl} target="_blank">
+            {resultUrl}
           </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        </p>
+      )}
+    </main>
   );
 }
