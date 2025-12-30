@@ -5,25 +5,30 @@ export default async function PastePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // ✅ Await params (required in latest Next.js)
   const { id } = await params;
 
-  const paste = await redis.hgetall<{
-    content?: string;
-  }>(`paste:${id}`);
-
-  // If paste does not exist
-  if (!paste || !paste.content) {
+  // Call the API endpoint that enforces TTL and view limits
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/pastes/${id}`);
+  
+  if (!res.ok) {
+    const error = await res.json();
     return (
       <h1 style={{ padding: "20px" }}>
-        404 – Paste Not Found
+        404 – {error.error || "Paste Not Found"}
       </h1>
     );
   }
 
+  const paste = await res.json();
+
   return (
     <main style={{ padding: "20px" }}>
       <h2>Paste</h2>
+      {paste.remaining_views !== null && (
+        <p style={{ fontSize: "12px", color: "#666" }}>
+          Remaining views: {paste.remaining_views}
+        </p>
+      )}
       <pre
         style={{
           whiteSpace: "pre-wrap",
